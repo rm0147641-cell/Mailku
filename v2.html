@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Generator & Inbox Portal</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-hover: #334155;
+      --border: #334155;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* AUTH SCREEN (LOGIN & DAFTAR) */
+    #auth-view { display: flex; align-items: center; justify-content: center; flex: 1; padding: 20px; }
+    .auth-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      padding: 28px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab-btn {
+      flex: 1; padding: 10px; background: none; border: none; color: var(--text-muted);
+      font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-muted); }
+    .form-group input {
+      width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); font-size: 0.95rem; outline: none;
+    }
+    .form-group input:focus { border-color: var(--primary); }
+    .btn {
+      width: 100%; padding: 11px; border: none; border-radius: 8px; background: var(--primary);
+      color: white; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: 0.2s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .alert { font-size: 0.85rem; margin-top: 12px; padding: 10px; border-radius: 6px; display: none; text-align: center; }
+    .alert.error { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .alert.success { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+
+    /* DASHBOARD */
+    #dashboard-view { display: none; flex-direction: column; height: 100vh; }
+    header {
+      background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+    }
+    .brand { font-weight: 700; font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-sm {
+      padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg); color: var(--text); cursor: pointer; font-size: 0.83rem;
+    }
+    .btn-sm:hover { background: var(--surface-hover); }
+    .btn-green { background: var(--success); border-color: var(--success); color: #064e3b; font-weight: 700; }
+    .btn-green:hover { background: #059669; color: white; }
+    .btn-danger { border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+
+    /* GENERATOR BAR */
+    .generator-panel {
+      background: #131c31; border-bottom: 1px solid var(--border); padding: 14px 20px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .gen-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .alias-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .alias-pills::-webkit-scrollbar { height: 5px; }
+    .alias-pills::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .alias-pill {
+      background: var(--surface); border: 1px solid var(--border); padding: 6px 12px;
+      border-radius: 6px; font-size: 0.82rem; display: flex; align-items: center; gap: 8px;
+      white-space: nowrap; cursor: pointer; transition: 0.15s;
+    }
+    .alias-pill:hover { border-color: var(--primary); }
+    .alias-pill.selected { background: rgba(59,130,246,0.2); border-color: var(--primary); color: #93c5fd; }
+    .copy-tag {
+      background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; color: var(--text-muted);
+    }
+
+    /* MAIN INBOX */
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+    .sidebar { width: 370px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: #131c31; }
+    .sidebar-header {
+      padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.8rem;
+      color: var(--text-muted); display: flex; justify-content: space-between;
+    }
+    .email-list { flex: 1; overflow-y: auto; }
+    .email-item { padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; }
+    .email-item:hover { background: var(--surface); }
+    .email-item.active { background: var(--surface); border-left: 3px solid var(--primary); }
+    .email-to-badge {
+      display: inline-block; background: rgba(16,185,129,0.15); color: #6ee7b7;
+      font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-bottom: 5px;
+    }
+    .email-subject { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .email-snippet { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* READER */
+    .reader-pane { flex: 1; display: flex; flex-direction: column; background: var(--bg); overflow: hidden; }
+    .reader-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); padding: 20px; text-align: center; }
+    .reader-content { display: none; flex-direction: column; height: 100%; }
+    .reader-header { padding: 18px 22px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .reader-header h3 { font-size: 1.15rem; margin-bottom: 8px; }
+    .reader-meta { font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+    .reader-body-wrapper { flex: 1; background: #ffffff; }
+    iframe#html-frame { width: 100%; height: 100%; border: none; }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 100%; }
+      .reader-pane { display: none; position: fixed; inset: 0; z-index: 50; }
+      .reader-pane.mobile-open { display: flex; }
+      .mobile-back { display: inline-block !important; margin-bottom: 10px; }
+    }
+    .mobile-back { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- HALAMAN LOGIN & DAFTAR -->
+  <div id="auth-view">
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Masuk</button>
+        <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Daftar Akun</button>
+      </div>
+
+      <form id="auth-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="username" required placeholder="Contoh: budi_santoso">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" required placeholder="Minimal 4 karakter">
+        </div>
+        <button type="submit" class="btn" id="auth-btn">Masuk</button>
+        <div class="alert" id="auth-alert"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- HALAMAN DASHBOARD -->
+  <div id="dashboard-view">
+    <header>
+      <div class="brand">
+        <span>Private Inbox Portal</span>
+      </div>
+      <div class="header-actions">
+        <span id="user-display" style="font-size: 0.83rem; color: var(--text-muted);"></span>
+        <button class="btn-sm" id="refresh-btn" onclick="loadDashboardData()">Refresh Inbox</button>
+        <button class="btn-sm btn-danger" onclick="logout()">Keluar</button>
+      </div>
+    </header>
+
+    <!-- PANEL GENERATOR EMAIL UNIK -->
+    <div class="generator-panel">
+      <div class="gen-top">
+        <div style="font-size: 0.85rem; color: var(--text-muted);">
+          Email Khusus Milikmu (Klik untuk salin, atau klik kotak untuk filter inbox):
+        </div>
+        <button class="btn-sm btn-green" id="gen-btn" onclick="generateNewEmail()">+ Generate Email Baru</button>
+      </div>
+      <div class="alias-pills" id="alias-list">
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Memuat daftar email...</span>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <span id="filter-label">Menampilkan: Semua Email Milikmu</span>
+          <span id="email-count">0 pesan</span>
+        </div>
+        <div class="email-list" id="email-list"></div>
+      </div>
+
+      <div class="reader-pane" id="reader-pane">
+        <div class="reader-empty" id="reader-empty">
+          Generate email baru di atas, lalu pesan masuk dari <strong>dev9tornado@gmail.com</strong> ke email tersebut akan tampil di sini.
+        </div>
+        <div class="reader-content" id="reader-content">
+          <div class="reader-header">
+            <button class="btn-sm mobile-back" onclick="closeMobileReader()">&larr; Kembali</button>
+            <h3 id="detail-subject"></h3>
+            <div class="reader-meta">
+              <div><strong>Dari:</strong> <span id="detail-from"></span></div>
+              <div><strong>Untuk Emailmu:</strong> <span id="detail-to" style="color: #6ee7b7;"></span></div>
+              <div><strong>Waktu:</strong> <span id="detail-date"></span></div>
+            </div>
+          </div>
+          <div class="reader-body-wrapper">
+            <!-- Tambahkan allow-popups dan allow-popups-to-escape-sandbox agar link bisa dibuka di tab baru -->
+            <iframe id="html-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========================================================
+    // TEMPEL URL WEB APP APPS SCRIPT KAMU DI BAWAH INI
+    // ========================================================
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwTUmxiywYQQloLLRCJ6wl15itbe064gFzNoQIJnWrlnD573QI2FbaWq0PcmH2XMCxz2g/exec";
+
+    let authMode = "login";
+    let myEmails = [];
+    let allInbox = [];
+    let selectedAliasFilter = null;
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const u = localStorage.getItem("portal_user");
+      const p = localStorage.getItem("portal_pass");
+      if (u && p) {
+        showDashboard(u);
+        loadDashboardData();
+      }
+    });
+
+    function switchTab(mode) {
+      authMode = mode;
+      document.getElementById("tab-login").classList.toggle("active", mode === "login");
+      document.getElementById("tab-register").classList.toggle("active", mode === "register");
+      document.getElementById("auth-btn").textContent = mode === "login" ? "Masuk" : "Daftar Sekarang";
+      document.getElementById("auth-alert").style.display = "none";
+    }
+
+    function showAlert(msg, type) {
+      const box = document.getElementById("auth-alert");
+      box.textContent = msg;
+      box.className = "alert " + type;
+      box.style.display = "block";
+    }
+
+    // Handle Login & Daftar
+    document.getElementById("auth-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const btn = document.getElementById("auth-btn");
+
+      btn.disabled = true;
+      btn.textContent = "Memproses...";
+      document.getElementById("auth-alert").style.display = "none";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: authMode, username, password })
+        });
+        const data = await res.json();
+
+        if (data.status === "success") {
+          if (authMode === "register") {
+            showAlert(data.message, "success");
+            switchTab("login");
+          } else {
+            localStorage.setItem("portal_user", data.user);
+            localStorage.setItem("portal_pass", password);
+            showDashboard(data.user);
+            loadDashboardData();
+          }
+        } else {
+          showAlert(data.message, "error");
+        }
+      } catch (err) {
+        showAlert("Gagal terhubung ke server API.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = authMode === "login" ? "Masuk" : "Daftar Sekarang";
+      }
+    });
+
+    function showDashboard(username) {
+      document.getElementById("auth-view").style.display = "none";
+      document.getElementById("dashboard-view").style.display = "flex";
+      document.getElementById("user-display").textContent = `Akun: ${username}`;
+    }
+
+    function logout() {
+      localStorage.removeItem("portal_user");
+      localStorage.removeItem("portal_pass");
+      location.reload();
+    }
+
+    // Generate Variasi Email Baru
+    async function generateNewEmail() {
+      const btn = document.getElementById("gen-btn");
+      btn.disabled = true;
+      btn.textContent = "Membuat...";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "generateEmail",
+            username: localStorage.getItem("portal_user"),
+            password: localStorage.getItem("portal_pass")
+          })
+        });
+        const data = await res.json();
+
+        if (data.status === "success") {
+          myEmails.unshift(data.email);
+          renderAliasPills();
+          navigator.clipboard?.writeText(data.email);
+          alert("Email unik berhasil dibuat & disalin ke clipboard:\n" + data.email);
+        } else {
+          alert(data.message);
+        }
+      } catch (err) {
+        alert("Gagal membuat email baru.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "+ Generate Email Baru";
+      }
+    }
+
+    // Muat Daftar Email Milik User & Inbox
+    async function loadDashboardData() {
+      const btn = document.getElementById("refresh-btn");
+      btn.disabled = true;
+      btn.textContent = "Memuat...";
+
+      try {
+        const res = await fetch(GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "getDashboardData",
+            username: localStorage.getItem("portal_user"),
+            password: localStorage.getItem("portal_pass")
+          })
+        });
+        const data = await res.json();
+
+        if (data.status === "success") {
+          myEmails = data.myEmails;
+          allInbox = data.inbox;
+          renderAliasPills();
+          renderInbox();
+        } else {
+          alert(data.message);
+          logout();
+        }
+      } catch (err) {
+        document.getElementById("email-list").innerHTML = `<div style="padding:20px; color:#ef4444; text-align:center;">Gagal memuat data.</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Refresh Inbox";
+      }
+    }
+
+    function renderAliasPills() {
+      const container = document.getElementById("alias-list");
+      if (myEmails.length === 0) {
+        container.innerHTML = `<span style="font-size: 0.82rem; color: #94a3b8;">Kamu belum punya email. Klik tombol <strong>+ Generate Email Baru</strong> di kanan.</span>`;
+        return;
+      }
+
+      let html = `
+        <div class="alias-pill ${selectedAliasFilter === null ? 'selected' : ''}" onclick="filterByAlias(null)">
+          Semua (${myEmails.length})
+        </div>
+      `;
+
+      html += myEmails.map(email => `
+        <div class="alias-pill ${selectedAliasFilter === email ? 'selected' : ''}" onclick="filterByAlias('${email}')">
+          <span>${email}</span>
+          <span class="copy-tag" onclick="event.stopPropagation(); copyEmail('${email}', this)">Salin</span>
+        </div>
+      `).join("");
+
+      container.innerHTML = html;
+    }
+
+    function copyEmail(email, btnEl) {
+      navigator.clipboard.writeText(email);
+      const oldText = btnEl.textContent;
+      btnEl.textContent = "Tersalin!";
+      setTimeout(() => btnEl.textContent = oldText, 1200);
+    }
+
+    function filterByAlias(alias) {
+      selectedAliasFilter = alias;
+      document.getElementById("filter-label").textContent = alias ? `Filter: ${alias}` : "Menampilkan: Semua Email Milikmu";
+      renderAliasPills();
+      renderInbox();
+    }
+
+    function renderInbox() {
+      const listEl = document.getElementById("email-list");
+      const filtered = selectedAliasFilter 
+        ? allInbox.filter(m => m.to.toLowerCase() === selectedAliasFilter.toLowerCase())
+        : allInbox;
+
+      document.getElementById("email-count").textContent = `${filtered.length} pesan`;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div style="padding:24px; text-align:center; color:#94a3b8; font-size:0.85rem;">Belum ada pesan masuk dari dev9tornado@gmail.com ke email milikmu.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((mail, idx) => {
+        const d = new Date(mail.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+        return `
+          <div class="email-item" onclick="openMail(${idx}, this)">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="email-to-badge">Ke: ${mail.to}</span>
+              <span style="font-size:0.75rem; color:#94a3b8;">${d}</span>
+            </div>
+            <div class="email-subject">${escapeHtml(mail.subject)}</div>
+            <div class="email-snippet">${escapeHtml(mail.snippet)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function openMail(idx, el) {
+      document.querySelectorAll(".email-item").forEach(i => i.classList.remove("active"));
+      if (el) el.classList.add("active");
+
+      const filtered = selectedAliasFilter 
+        ? allInbox.filter(m => m.to.toLowerCase() === selectedAliasFilter.toLowerCase())
+        : allInbox;
+      const mail = filtered[idx];
+
+      document.getElementById("reader-empty").style.display = "none";
+      document.getElementById("reader-content").style.display = "flex";
+      document.getElementById("reader-pane").classList.add("mobile-open");
+
+      document.getElementById("detail-subject").textContent = mail.subject;
+      document.getElementById("detail-from").textContent = mail.from;
+      document.getElementById("detail-to").textContent = mail.to;
+      document.getElementById("detail-date").textContent = new Date(mail.date).toLocaleString("id-ID", { dateStyle: "full", timeStyle: "short" });
+
+      const iframe = document.getElementById("html-frame");
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+
+      // Sisipkan <base target="_blank"> agar semua tag <a> di dalam email otomatis buka tab baru
+      const baseTag = `<base target="_blank" rel="noopener noreferrer">`;
+      const contentHtml = mail.bodyHtml
+        ? `${baseTag}${mail.bodyHtml}`
+        : `${baseTag}<pre style="font-family:sans-serif;white-space:pre-wrap;word-break:break-word;padding:16px;">${linkify(escapeHtml(mail.bodyPlain))}</pre>`;
+
+      doc.open();
+      doc.write(contentHtml);
+      doc.close();
+
+      // Paksa semua link (termasuk yang punya target="_self" atau tanpa target) buka di tab baru
+      doc.querySelectorAll("a[href]").forEach(a => {
+        a.setAttribute("target", "_blank");
+        a.setAttribute("rel", "noopener noreferrer");
+      });
+    }
+
+    // Ubah teks URL polos (http/https) menjadi link yang bisa diklik
+    function linkify(escapedText) {
+      const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+      return escapedText.replace(urlRegex, url => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;">${url}</a>`;
+      });
+    }
+
+    function closeMobileReader() {
+      document.getElementById("reader-pane").classList.remove("mobile-open");
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
