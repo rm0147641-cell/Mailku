@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0f17">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>MailVault — Email Generator, Private Inbox &amp; Marketplace</title>
+  <link rel="icon" type="image/svg+xml" href="./logo.svg">
+  <link rel="apple-touch-icon" href="./logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Ambient Background (GPU Accelerated) -->
+  <div class="ambient-canvas" aria-hidden="true">
+    <div class="ambient-orb orb-1"></div>
+    <div class="ambient-orb orb-2"></div>
+    <div class="ambient-grid"></div>
+  </div>
+
+  <!-- Toast Stack -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- =====================================================================
+       1. HALAMAN LOGIN & DAFTAR AKUN
+       ===================================================================== -->
+  <section id="auth-view" class="auth-screen">
+    <div class="auth-wrapper animate-rise">
+      <div class="auth-brand-header">
+        <img src="./logo.svg" alt="Logo MailVault" class="brand-logo-img" width="48" height="48">
+        <div>
+          <h1 class="brand-title">MailVault Portal</h1>
+          <p class="brand-subtitle">Generator Variasi Email, Private Inbox &amp; Marketplace</p>
+        </div>
+      </div>
+
+      <div class="auth-card spotlight-card">
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="tab-btn active" id="tab-login" role="tab" aria-selected="true">Masuk</button>
+          <button type="button" class="tab-btn" id="tab-register" role="tab" aria-selected="false">Daftar Akun</button>
+          <div class="tab-indicator" id="auth-tab-indicator"></div>
+        </div>
+
+        <form id="auth-form" novalidate>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-shell">
+              <input type="text" id="username" name="username" required autocomplete="username" placeholder="Contoh: budi_santoso">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-shell">
+              <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Minimal 4 karakter">
+              <button type="button" class="input-eye-btn" id="toggle-auth-pass" aria-label="Tampilkan password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="auth-btn">
+            <span class="btn-label">Masuk</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+
+          <div class="alert" id="auth-alert" role="alert"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================================
+       APP SHELL SETELAH LOGIN
+       ===================================================================== -->
+  <div id="dashboard-view" class="app-shell hidden">
+    <!-- Top Header -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <img src="./logo.svg" alt="MailVault" class="topbar-logo-img" width="32" height="32">
+        <span class="topbar-title">MailVault</span>
+        <span class="sync-badge" id="sync-status-badge" title="Terhubung ke Server Apps Script">
+          <span class="pulse-dot"></span>
+          <span id="sync-status-text">API Aktif</span>
+        </span>
+      </div>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Navigasi Utama">
+        <button type="button" class="nav-pill active" data-page="home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span>Home</span>
+        </button>
+        <button type="button" class="nav-pill" data-page="my-email">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <span>My Email</span>
+          <span class="nav-count" id="nav-email-count">0</span>
+        </button>
+        <button type="button" class="nav-pill" data-page="market">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span>Buy / Sell</span>
+        </button>
+        <button type="button" class="nav-pill" data-page="chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Chat</span>
+          <span class="nav-count accent hidden" id="nav-chat-count">0</span>
+        </button>
+        <button type="button" class="nav-pill" data-page="account">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Akun</span>
+        </button>
+      </nav>
+
+      <div class="topbar-right">
+        <span class="user-chip" id="user-display">@user</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="refresh-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+          <span class="hide-xs">Refresh</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Viewport -->
+    <main class="viewport">
+      <!-- =================================================================
+           2. HALAMAN HOME (GENERATE + CARA GENERATE + CARA CEK PESAN + INBOX)
+           ================================================================= -->
+      <section id="page-home" class="page-view active">
+        <!-- Hero Generator Card -->
+        <div class="hero-card spotlight-card animate-rise">
+          <div class="hero-main">
+            <div class="hero-badge">Apps Script Direct Engine</div>
+            <h2 class="hero-heading">Generate Akun Email Unik dalam Sekali Klik</h2>
+            <p class="hero-desc">
+              Buat variasi alamat email baru yang terhubung langsung ke kotak masuk pribadimu. Semua URL di dalam pesan otomatis terbuka di halaman baru.
+            </p>
+            <div class="hero-actions">
+              <button type="button" class="btn btn-emerald btn-lg" id="gen-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                <span class="btn-label">+ Generate Email Baru</span>
+                <span class="btn-spinner" aria-hidden="true"></span>
+              </button>
+              <button type="button" class="btn btn-ghost btn-lg" data-jump="my-email">
+                Buka My Email
+              </button>
+            </div>
+
+            <!-- Hasil Generate Terbaru -->
+            <div id="latest-generated-box" class="latest-gen-box hidden">
+              <div class="latest-gen-label">Email Baru Berhasil Dibuat &amp; Disalin:</div>
+              <div class="latest-gen-row">
+                <code id="latest-generated-email" class="mono-email"></code>
+                <button type="button" class="btn btn-sm btn-primary" id="copy-latest-btn">Salin Ulang</button>
+              </div>
+            </div>
+
+            <div class="hero-stats" style="margin-top:18px;">
+              <div class="stat-tile">
+                <span class="stat-label">Total Email Aktif</span>
+                <strong class="stat-value" id="stat-total-emails">0</strong>
+              </div>
+              <div class="stat-tile">
+                <span class="stat-label">Pesan Masuk</span>
+                <strong class="stat-value" id="stat-total-inbox">0</strong>
+              </div>
+              <div class="stat-tile">
+                <span class="stat-label">Email Siap Pakai</span>
+                <strong class="stat-value emerald" id="stat-ready-emails">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-visual-box">
+            <img src="./hero-visual.png" alt="Ilustrasi Routing Email MailVault" class="hero-visual-img" width="640" height="360" loading="eager">
+          </div>
+        </div>
+
+        <!-- Panduan Cara Generate, Cara Cek Pesan & Klik URL Tab Baru -->
+        <div class="guide-grid animate-rise delay-1">
+          <article class="guide-card spotlight-card">
+            <div class="guide-icon-row">
+              <div class="guide-icon blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              </div>
+              <span class="guide-step">LANGKAH 01 • CARA GENERATE</span>
+            </div>
+            <h3>Klik Generate Email Baru</h3>
+            <p>Tekan tombol <strong>+ Generate Email Baru</strong> di atas. Sistem membuat variasi titik baru (contoh: <code>andik.aputrawijay.akar.mmtoon@gmail.com</code>) dan otomatis menyalinnya ke clipboard perangkatmu.</p>
+          </article>
+
+          <article class="guide-card spotlight-card">
+            <div class="guide-icon-row">
+              <div class="guide-icon emerald">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+              </div>
+              <span class="guide-step">LANGKAH 02 • CARA CEK PESAN</span>
+            </div>
+            <h3>Pilih Alias &amp; Refresh Inbox</h3>
+            <p>Klik salah satu kotak email di bawah untuk memfilter pesan khusus tujuan tersebut, lalu tekan <strong>Refresh</strong>. Pesan masuk akan muncul di daftar kotak masuk dan siap dibaca.</p>
+          </article>
+
+          <article class="guide-card spotlight-card">
+            <div class="guide-icon-row">
+              <div class="guide-icon amber">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </div>
+              <span class="guide-step">LANGKAH 03 • BUKA URL</span>
+            </div>
+            <h3>Klik Link Otomatis Web Baru</h3>
+            <p>Semua tautan maupun teks URL (<code>https://...</code>) di dalam isi pesan email otomatis dikonversi agar ketika diklik langsung terbuka di <strong>tab / halaman browser baru</strong>.</p>
+          </article>
+        </div>
+
+        <!-- Alias Filter Strip -->
+        <div class="alias-bar-card animate-rise delay-2">
+          <div class="alias-bar-header">
+            <span class="section-mini-title">Email Khusus Milikmu (Klik untuk Filter, Klik Salin untuk Copy):</span>
+            <span class="muted-hint" id="filter-label">Menampilkan: Semua Email Milikmu</span>
+          </div>
+          <div class="alias-pills" id="alias-list">
+            <span class="muted-hint">Memuat daftar email...</span>
+          </div>
+        </div>
+
+        <!-- Inbox Split Workspace -->
+        <div class="inbox-workspace animate-rise delay-2">
+          <div class="inbox-sidebar">
+            <div class="inbox-sidebar-head">
+              <span>Kotak Masuk</span>
+              <span class="badge-count" id="email-count">0 pesan</span>
+            </div>
+            <div class="email-list" id="email-list"></div>
+          </div>
+
+          <div class="reader-pane" id="reader-pane">
+            <div class="reader-empty" id="reader-empty">
+              <img src="./empty-state.svg" alt="Ilustrasi Kotak Masuk" class="empty-svg-img" width="180" height="120">
+              <h4>Pilih Pesan untuk Membaca</h4>
+              <p>Generate email baru di atas, lalu pilih pesan di daftar sebelah kiri. Semua URL di dalam pesan akan terbuka di halaman baru saat diklik.</p>
+            </div>
+
+            <div class="reader-content hidden" id="reader-content">
+              <div class="reader-header">
+                <button type="button" class="btn btn-ghost btn-sm mobile-back" id="close-mobile-reader">
+                  &larr; Kembali ke Daftar Pesan
+                </button>
+                <h3 id="detail-subject"></h3>
+                <div class="reader-meta">
+                  <div><strong>Dari:</strong> <span id="detail-from"></span></div>
+                  <div><strong>Untuk Emailmu:</strong> <span id="detail-to" class="emerald-text"></span></div>
+                  <div><strong>Waktu:</strong> <span id="detail-date"></span></div>
+                </div>
+              </div>
+              <div class="reader-body-wrapper">
+                <iframe id="html-frame" title="Isi Pesan Email" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           3. HALAMAN MY EMAIL
+           ================================================================= -->
+      <section id="page-my-email" class="page-view hidden">
+        <div class="page-header-row animate-rise">
+          <div>
+            <h2 class="page-title">My Email</h2>
+            <p class="page-subtitle">Menampilkan seluruh email hasil generate milik akunmu beserta tanggal terakhir menerima pesan dan tanggal siap pakai.</p>
+          </div>
+          <div class="page-header-actions">
+            <button type="button" class="btn btn-emerald" id="my-email-gen-btn">+ Generate Email</button>
+          </div>
+        </div>
+
+        <!-- Pengaturan Rentang Tanggal Siap Pakai (15 - 60 Hari) -->
+        <div class="readiness-control-card spotlight-card animate-rise delay-1">
+          <div class="readiness-info">
+            <span class="readiness-tag">Perhitungan Tanggal Siap Pakai</span>
+            <p>
+              Jika email <strong>pertama kali menerima pesan</strong>, tanggal siap pakai otomatis dihitung <strong>+30 hari</strong>. Untuk email yang sudah menerima pesan lanjutan, atur rentang <strong>15 sampai 60 hari</strong> dari tanggal terakhir menerima pesan:
+            </p>
+          </div>
+          <div class="readiness-slider-box">
+            <div class="slider-top">
+              <span>Rentang Tambahan:</span>
+              <strong id="ready-days-label" class="emerald-text">30 Hari</strong>
+            </div>
+            <input type="range" id="ready-days-slider" min="15" max="60" value="30" step="1">
+            <div class="preset-pills">
+              <button type="button" class="preset-btn" data-days="15">15 Hari</button>
+              <button type="button" class="preset-btn active" data-days="30">30 Hari</button>
+              <button type="button" class="preset-btn" data-days="45">45 Hari</button>
+              <button type="button" class="preset-btn" data-days="60">60 Hari</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pencarian My Email -->
+        <div class="toolbar-row animate-rise delay-1">
+          <input type="search" id="my-email-search" class="search-input" placeholder="Cari alamat email milikmu...">
+          <select id="my-email-filter" class="select-input">
+            <option value="all">Semua Status</option>
+            <option value="ready">Siap Pakai</option>
+            <option value="waiting">Masa Tunggu</option>
+            <option value="unreceived">Belum Ada Pesan</option>
+          </select>
+        </div>
+
+        <!-- Grid Kartu My Email -->
+        <div id="my-email-grid" class="my-email-grid animate-rise delay-2"></div>
+      </section>
+
+      <!-- =================================================================
+           4. HALAMAN BUY / SELL (TOKO EMAIL)
+           ================================================================= -->
+      <section id="page-market" class="page-view hidden">
+        <div class="page-header-row animate-rise">
+          <div>
+            <h2 class="page-title">Buy / Sell Toko Email</h2>
+            <p class="page-subtitle">Jual email generate milikmu atau beli &amp; tawar email pengguna lain. Email disensor otomatis sebelum dibeli dan otomatis berpindah kepemilikan setelah transaksi.</p>
+          </div>
+          <div class="page-header-actions">
+            <button type="button" class="btn btn-emerald" id="open-sell-modal-btn">
+              + Jual Email Saya
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Toko: Harga Dari ... Sampai ... + Terendah / Tertinggi -->
+        <div class="market-filter-card spotlight-card animate-rise delay-1">
+          <div class="filter-grid">
+            <div class="filter-field">
+              <label for="filter-price-min">Harga Dari (Rp)</label>
+              <input type="number" id="filter-price-min" min="0" step="1000" placeholder="Contoh: 5000">
+            </div>
+            <div class="filter-field">
+              <label for="filter-price-max">Sampai (Rp)</label>
+              <input type="number" id="filter-price-max" min="0" step="1000" placeholder="Contoh: 100000">
+            </div>
+            <div class="filter-field">
+              <label for="filter-sort">Urutkan Harga</label>
+              <select id="filter-sort">
+                <option value="newest">Terbaru</option>
+                <option value="lowest">Harga Terendah</option>
+                <option value="highest">Harga Tertinggi</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="filter-market-search">Cari Deskripsi / Penjual</label>
+              <input type="search" id="filter-market-search" placeholder="Cari kata kunci...">
+            </div>
+          </div>
+          <div class="filter-footer">
+            <label class="checkbox-label">
+              <input type="checkbox" id="filter-only-available" checked>
+              <span>Tampilkan yang belum terjual saja</span>
+            </label>
+            <button type="button" class="btn btn-ghost btn-sm" id="reset-market-filter">Reset Filter</button>
+          </div>
+        </div>
+
+        <!-- Daftar Produk Toko -->
+        <div id="market-grid" class="market-grid animate-rise delay-2"></div>
+      </section>
+
+      <!-- =================================================================
+           5. HALAMAN CHAT
+           ================================================================= -->
+      <section id="page-chat" class="page-view hidden">
+        <div class="page-header-row animate-rise">
+          <div>
+            <h2 class="page-title">Pesan &amp; Negosiasi (Chat)</h2>
+            <p class="page-subtitle">Menampilkan seluruh pengguna yang mengirim pesan atau penawaran kepadamu. Balas pesan langsung di sini.</p>
+          </div>
+          <div class="page-header-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="open-new-chat-btn">+ Mulai Chat Baru</button>
+          </div>
+        </div>
+
+        <div class="chat-workspace animate-rise delay-1">
+          <!-- Daftar Kontak Chat -->
+          <aside class="chat-sidebar" id="chat-sidebar">
+            <div class="chat-sidebar-head">
+              <input type="search" id="chat-contact-search" class="search-input compact" placeholder="Cari pengguna...">
+            </div>
+            <div class="chat-thread-list" id="chat-thread-list"></div>
+          </aside>
+
+          <!-- Ruang Percakapan -->
+          <div class="chat-room" id="chat-room">
+            <div class="chat-empty" id="chat-empty">
+              <img src="./empty-state.svg" alt="Ilustrasi Chat" class="empty-svg-img" width="170" height="114">
+              <h4>Pilih Percakapan</h4>
+              <p>Pilih pengguna dari daftar di sebelah kiri untuk membaca pesan masuk dan membalasnya.</p>
+            </div>
+
+            <div class="chat-active-box hidden" id="chat-active-box">
+              <div class="chat-room-header">
+                <button type="button" class="btn btn-ghost btn-sm mobile-back" id="close-mobile-chat">&larr; Daftar Chat</button>
+                <div class="chat-peer-info">
+                  <div class="avatar-circle" id="chat-peer-avatar">U</div>
+                  <div>
+                    <strong id="chat-peer-name">@username</strong>
+                    <span class="peer-status">Pengguna MailVault</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chat-messages" id="chat-messages"></div>
+
+              <form class="chat-composer" id="chat-composer-form">
+                <input type="text" id="chat-input" placeholder="Tulis pesan balasan..." autocomplete="off" required>
+                <button type="submit" class="btn btn-primary">Kirim</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================
+           6. HALAMAN AKUN
+           ================================================================= -->
+      <section id="page-account" class="page-view hidden">
+        <div class="page-header-row animate-rise">
+          <div>
+            <h2 class="page-title">Pengaturan Akun</h2>
+            <p class="page-subtitle">Kelola nama tampilan, email akun, kata sandi (bisa diubah), serta bergabung ke saluran resmi admin.</p>
+          </div>
+        </div>
+
+        <div class="account-grid animate-rise delay-1">
+          <!-- Profil & Ubah Data -->
+          <div class="account-card spotlight-card">
+            <div class="account-profile-head">
+              <div class="avatar-circle large" id="account-avatar">U</div>
+              <div>
+                <h3 id="account-display-name">Username</h3>
+                <p id="account-display-username" class="muted-hint">@username</p>
+              </div>
+            </div>
+
+            <form id="account-update-form" class="stack-form">
+              <div class="form-group">
+                <label for="acc-name">Nama</label>
+                <input type="text" id="acc-name" required placeholder="Nama tampilan kamu">
+              </div>
+
+              <div class="form-group">
+                <label for="acc-email">Email</label>
+                <input type="email" id="acc-email" placeholder="contoh@gmail.com">
+              </div>
+
+              <div class="form-group">
+                <label for="acc-password">Password (Bisa Diubah)</label>
+                <div class="input-shell">
+                  <input type="password" id="acc-password" required placeholder="Minimal 4 karakter">
+                  <button type="button" class="input-eye-btn" id="toggle-acc-pass" aria-label="Lihat password">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">Simpan Perubahan Akun</button>
+            </form>
+          </div>
+
+          <!-- Saluran Admin & Logout -->
+          <div class="account-side-stack">
+            <div class="account-card spotlight-card channel-card">
+              <img src="./channel-banner.svg" alt="Saluran Admin WhatsApp" class="channel-banner-img" width="320" height="110">
+              <div class="channel-badge" style="margin-top:12px;">Komunitas Resmi</div>
+              <h3>Join Saluran Admin</h3>
+              <p>Ikuti saluran WhatsApp resmi admin untuk informasi pembaruan sistem dan pengumuman penting.</p>
+              <a href="https://whatsapp.com/channel/0029Vb8PWCiIHphQ47uGEm1O" target="_blank" rel="noopener noreferrer" class="btn btn-emerald btn-block">
+                Join Saluran Admin WhatsApp &nearr;
+              </a>
+            </div>
+
+            <div class="account-card spotlight-card danger-zone-card">
+              <h3>Sesi Akun</h3>
+              <p>Keluar dari akun ini pada perangkat yang sedang kamu gunakan.</p>
+              <button type="button" class="btn btn-danger btn-block" id="logout-btn">Logout</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Mobile Navigation (iOS / Android Safe Area) -->
+    <nav class="mobile-bottom-nav" aria-label="Navigasi Mobile">
+      <button type="button" class="m-nav-item active" data-page="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
+      </button>
+      <button type="button" class="m-nav-item" data-page="my-email">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span>My Email</span>
+      </button>
+      <button type="button" class="m-nav-item" data-page="market">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span>Buy/Sell</span>
+      </button>
+      <button type="button" class="m-nav-item" data-page="chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chat</span>
+      </button>
+      <button type="button" class="m-nav-item" data-page="account">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Akun</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: JUAL EMAIL KE MARKETPLACE
+       ===================================================================== -->
+  <div id="sell-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="sell-modal-title">
+    <div class="modal-card animate-rise">
+      <div class="modal-head">
+        <h3 id="sell-modal-title">Jual Email Generate</h3>
+        <button type="button" class="modal-close" data-close-modal="sell-modal">&times;</button>
+      </div>
+      <form id="sell-form" class="stack-form">
+        <div class="form-group">
+          <label for="sell-email-select">Pilih Email dari My Email</label>
+          <select id="sell-email-select" required></select>
+          <small class="muted-hint">Di toko, emailmu otomatis disensor menjadi 8 karakter awal + ************.</small>
+        </div>
+        <div class="form-group">
+          <label for="sell-price">Harga Jual (Rp)</label>
+          <input type="number" id="sell-price" min="500" step="500" required placeholder="Contoh: 15000">
+        </div>
+        <div class="form-group">
+          <label for="sell-desc">Pesan / Deskripsi Penjualan</label>
+          <textarea id="sell-desc" rows="3" required placeholder="Tulis pesan atau deskripsi untuk pembeli..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="sell-modal">Batal</button>
+          <button type="submit" class="btn btn-emerald">Pasang di Toko</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: TAWAR & KOMENTAR POSTINGAN (+ KIRIM PESAN KE PENJUAL)
+       ===================================================================== -->
+  <div id="offer-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="offer-modal-title">
+    <div class="modal-card modal-lg animate-rise">
+      <div class="modal-head">
+        <div>
+          <h3 id="offer-modal-title">Tawar &amp; Komentar Postingan</h3>
+          <p id="offer-listing-subtitle" class="muted-hint"></p>
+        </div>
+        <button type="button" class="modal-close" data-close-modal="offer-modal">&times;</button>
+      </div>
+
+      <div class="offer-comments-box">
+        <div class="offer-comments-title">Komentar &amp; Penawaran pada Postingan Ini</div>
+        <div id="offer-comments-list" class="offer-comments-list"></div>
+      </div>
+
+      <form id="offer-form" class="stack-form">
+        <input type="hidden" id="offer-listing-id">
+        <div class="form-group">
+          <label for="offer-price">Harga Tawar (Rp) — Opsional</label>
+          <input type="number" id="offer-price" min="500" step="500" placeholder="Isi nominal tawaran jika ingin menawar harga">
+        </div>
+        <div class="form-group">
+          <label for="offer-message">Pesan / Komentar (Terkirim ke Postingan &amp; Chat Penjual)</label>
+          <textarea id="offer-message" rows="2" required placeholder="Tulis tawaran atau pertanyaan untuk penjual..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="offer-modal">Tutup</button>
+          <button type="submit" class="btn btn-primary">Kirim Komentar &amp; Pesan ke Penjual</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL: MULAI CHAT BARU
+       ===================================================================== -->
+  <div id="new-chat-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="new-chat-title">
+    <div class="modal-card animate-rise">
+      <div class="modal-head">
+        <h3 id="new-chat-title">Kirim Pesan Baru</h3>
+        <button type="button" class="modal-close" data-close-modal="new-chat-modal">&times;</button>
+      </div>
+      <form id="new-chat-form" class="stack-form">
+        <div class="form-group">
+          <label for="new-chat-recipient">Username Tujuan</label>
+          <input type="text" id="new-chat-recipient" required placeholder="Contoh: andika_store">
+        </div>
+        <div class="form-group">
+          <label for="new-chat-message">Isi Pesan</label>
+          <textarea id="new-chat-message" rows="3" required placeholder="Tulis pesan untuk pengguna tersebut..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close-modal="new-chat-modal">Batal</button>
+          <button type="submit" class="btn btn-primary">Kirim Pesan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
